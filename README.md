@@ -56,7 +56,7 @@ Drifting is optional. Holding Space loosens the rear grip and lets the car rotat
 
 ## Ghost car
 
-A translucent cyan ghost drives the reference lap alongside you. Its lap (`src/ghost-data.js`) was produced offline by running a parameterised autopilot through the game's exact physics several thousand times and keeping the fastest clean run (no wall contact). The HUD shows your split against it at every checkpoint, and the finish screen shows the final gap. If you change the track or car physics, regenerate the data by re-running the optimizer (an autopilot that steers toward a look-ahead point and brakes by curvature; `Car.update` is fully deterministic, so any run can be recorded and replayed).
+Every lap is recorded (position and orientation, 30 times a second). When you set a new best time, that lap is saved to `localStorage` under `neonRushBestGhost` and replayed as a translucent cyan ghost on your next runs. The HUD shows your split against the ghost at every checkpoint (green = ahead, red = behind), and the finish screen shows the final gap. There is no ghost until you finish your first lap.
 
 ## Dependency
 
@@ -81,8 +81,7 @@ It is the only external dependency (plus the Rajdhani web font from Google Fonts
 │   ├── track.js      centerline control points, ground queries, track geometry
 │   ├── scenery.js    deterministic trackside objects
 │   ├── camera.js     chase camera
-│   ├── ghost.js      ghost car replay
-│   ├── ghost-data.js recorded reference lap (generated)
+│   ├── ghost.js      records laps, replays your best as a ghost
 │   ├── input.js      keyboard
 │   ├── timer.js      race timer + formatting
 │   ├── ui.js         DOM UI controller

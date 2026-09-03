@@ -135,6 +135,7 @@ export class Game {
     this.particles.clear(); this.skids.clear();
     this.stuckTime = 0; this.respawning = false; this.finishShown = false; this.finishTimer = 0;
     this.ui.fadeOut();
+    this.ghost.recording = null;
     this.ghost.setTime(0);
     this.ghost.setVisible(true);
     this.chase.snap(this.car);
@@ -174,11 +175,13 @@ export class Game {
     const prevBest = this.bestTime;
     const isRecord = !prevBest || final < prevBest;
     if (isRecord) { this.bestTime = Math.round(final); this.saveBest(this.bestTime); }
-    this.finishResult = { time: final, best: this.bestTime, isRecord, prevBest, ghostTime: this.ghost.time };
+    const ghostTime = this.ghost.time;
+    this.finishResult = { time: final, best: this.bestTime, isRecord, prevBest, ghostTime };
+    this.ghost.finishRecording(final, this.car, isRecord);
     this.finishTimer = 0; this.finishShown = false;
     this.ui.setTimer(final);
     this.ui.setBest(this.bestTime);
-    this.ui.flashMessage('Finish', final - this.ghost.time);
+    this.ui.flashMessage('Finish', ghostTime == null ? null : final - ghostTime);
     this.audio.finish();
     if (isRecord) this.audio.record();
     const ft = this.trackMeshes.finishTop;
@@ -241,6 +244,7 @@ export class Game {
           this.audio.go();
           this.state = STATE.RACING;
           this.timer.start();
+          this.ghost.startRecording();
           car.controlsEnabled = true;
         }
       }
@@ -276,7 +280,8 @@ export class Game {
     this.followLight();
     this.trackMeshes.gates.forEach((g) => g.update(this.time));
 
-    if (this.state === STATE.RACING || this.state === STATE.FINISHED) this.ghost.setTime(this.timer.elapsed);
+    if (this.state === STATE.RACING) { this.ghost.record(this.timer.elapsed, car); this.ghost.setTime(this.timer.elapsed); }
+    else if (this.state === STATE.FINISHED) this.ghost.setTime(this.timer.elapsed);
 
     // HUD
     if (this.state === STATE.RACING) this.ui.setTimer(this.timer.elapsed);
@@ -319,8 +324,10 @@ export class Game {
         this.nextCp++;
         if (this.nextCp < cps.length) this.trackMeshes.gates[this.nextCp].setState('next');
         this.ui.setCheckpoint(this.nextCp, cps.length);
-        const delta = this.timer.elapsed - this.ghost.timeAt(this.nextCp);
-        this.ui.flashMessage(`Checkpoint ${this.nextCp}`, delta);
+        const now = this.timer.elapsed;
+        this.ghost.recordCheckpoint(now);
+        const gt = this.ghost.timeAt(this.nextCp);
+        this.ui.flashMessage(`Checkpoint ${this.nextCp}`, gt == null ? null : now - gt);
         this.audio.checkpoint();
       }
     } else if (idxBefore < this.track.finishIndex && idxNow >= this.track.finishIndex && Math.abs(q.lateral) < HALF_WIDTH + 1.2) {

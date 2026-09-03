@@ -1,20 +1,27 @@
 import * as THREE from 'three';
-import { GHOST_DATA } from './ghost-data.js';
 
+const GHOST_KEY = 'neonRushBestGhost';
+const SAMPLE_MS = 1000 / 30;
 const _ghQa = new THREE.Quaternion(), _ghQb = new THREE.Quaternion();
+const rnd = (v) => Math.round(v * 100) / 100;
+const rnd4 = (v) => Math.round(v * 10000) / 10000;
 
-// Translucent replay of the reference lap. Frames are [x, y, z, qx, qy, qz, qw] at GHOST_DATA.fps.
+// Records the player's lap and replays the saved best lap as a translucent car.
+// Frames: [t(ms), x, y, z, qx, qy, qz, qw].
 export class Ghost {
   constructor(scene) {
-    this.data = GHOST_DATA;
-    this.time = this.data.time;                  // ms
-    this.checkpointTimes = this.data.checkpoints; // ms, in order
+    this.data = null;          // { time, checkpoints, frames }
+    this.recording = null;
+    this.lastSampleAt = -Infinity;
     this.group = new THREE.Group();
     this.group.name = 'ghost';
     this.group.visible = false;
     if (scene) { this.buildMesh(); scene.add(this.group); }
-    this.setTime(0);
+    this.load();
   }
+
+  get hasLap() { return !!(this.data && this.data.frames.length > 1); }
+  get time() { return this.data ? this.data.time : null; }
 
   buildMesh() {
     const g = this.group;
@@ -36,25 +43,68 @@ export class Ghost {
     g.renderOrder = 5;
   }
 
-  setVisible(v) { this.group.visible = v; }
+  // ---- storage ----
+  load() {
+    try {
+      const raw = localStorage.getItem(GHOST_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      const ok = d && Number.isFinite(d.time) && d.time > 0 && Array.isArray(d.frames) && d.frames.length > 1 &&
+        Array.isArray(d.checkpoints) && d.frames.every((f) => Array.isArray(f) && f.length === 8 && f.every(Number.isFinite));
+      if (ok) this.data = d;
+    } catch (e) { this.data = null; }
+  }
+  save() {
+    if (!this.data) return;
+    try { localStorage.setItem(GHOST_KEY, JSON.stringify(this.data)); } catch (e) { /* quota or unavailable */ }
+  }
 
-  // elapsedMs: race time since GO.
+  // ---- recording ----
+  startRecording() {
+    this.recording = { frames: [], checkpoints: [] };
+    this.lastSampleAt = -Infinity;
+  }
+  record(elapsedMs, car) {
+    const r = this.recording;
+    if (!r || elapsedMs - this.lastSampleAt < SAMPLE_MS) return;
+    this.lastSampleAt = elapsedMs;
+    const p = car.pos, q = car.group.quaternion;
+    r.frames.push([Math.round(elapsedMs), rnd(p.x), rnd(p.y), rnd(p.z), rnd4(q.x), rnd4(q.y), rnd4(q.z), rnd4(q.w)]);
+  }
+  recordCheckpoint(elapsedMs) { if (this.recording) this.recording.checkpoints.push(Math.round(elapsedMs)); }
+  // Called at the finish. Keeps the lap as the new ghost if it's a record.
+  finishRecording(finalMs, car, isRecord) {
+    const r = this.recording;
+    this.recording = null;
+    if (!r || !isRecord) return;
+    const p = car.pos, q = car.group.quaternion;
+    r.frames.push([Math.round(finalMs), rnd(p.x), rnd(p.y), rnd(p.z), rnd4(q.x), rnd4(q.y), rnd4(q.z), rnd4(q.w)]);
+    this.data = { time: Math.round(finalMs), checkpoints: r.checkpoints, frames: r.frames };
+    this.save();
+  }
+
+  // ---- playback ----
+  setVisible(v) { this.group.visible = v && this.hasLap; }
+
   setTime(elapsedMs) {
+    if (!this.hasLap) return;
     const f = this.data.frames;
-    const t = Math.max(0, elapsedMs / 1000) * this.data.fps;
-    const i = Math.min(f.length - 1, Math.floor(t));
-    const j = Math.min(f.length - 1, i + 1);
-    const k = i === j ? 0 : t - i;
-    const a = f[i], b = f[j];
-    this.group.position.set(a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k);
-    _ghQa.set(a[3], a[4], a[5], a[6]);
-    _ghQb.set(b[3], b[4], b[5], b[6]);
+    let lo = 0, hi = f.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (f[mid][0] <= elapsedMs) lo = mid; else hi = mid - 1; }
+    const a = f[lo], b = f[Math.min(f.length - 1, lo + 1)];
+    const span = b[0] - a[0];
+    const k = span > 0 ? Math.min(1, Math.max(0, (elapsedMs - a[0]) / span)) : 0;
+    this.group.position.set(a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k, a[3] + (b[3] - a[3]) * k);
+    _ghQa.set(a[4], a[5], a[6], a[7]);
+    _ghQb.set(b[4], b[5], b[6], b[7]);
     this.group.quaternion.copy(_ghQa).slerp(_ghQb, k);
   }
 
-  // Ghost's time at checkpoint n (1-based); finish when n > checkpoints.
+  // Ghost's time at checkpoint n (1-based); null if unknown.
   timeAt(n) {
-    if (n > this.checkpointTimes.length) return this.time;
-    return this.checkpointTimes[n - 1];
+    if (!this.data) return null;
+    if (n > this.data.checkpoints.length) return this.data.time;
+    const t = this.data.checkpoints[n - 1];
+    return Number.isFinite(t) ? t : null;
   }
 }

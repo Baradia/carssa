@@ -33,7 +33,7 @@ export class UI {
 
   showMenu(best, ghostTime) {
     this.el.menuBest.textContent = best ? formatTime(best) : '--:--.---';
-    if (ghostTime) this.el.menuGhost.textContent = formatTime(ghostTime);
+    this.el.menuGhost.textContent = ghostTime ? formatTime(ghostTime) : 'Finish a lap to create one';
     this._show(this.el.menu);
     this.el.startBtn.focus();
   }
@@ -110,9 +110,10 @@ export class UI {
     } else {
       e.finishDiff.textContent = 'First completed run';
     }
+    e.finishGhost.textContent = ''; e.finishGhost.className = 'diff';
     if (ghostTime) {
       const gd = time - ghostTime;
-      e.finishGhost.textContent = (gd <= 0 ? 'Beat the ghost by ' : 'Ghost was faster by ') + formatDiff(gd).slice(1) + ' (' + formatTime(ghostTime) + ')';
+      e.finishGhost.textContent = (gd <= 0 ? 'Ahead of your ghost by ' : 'Behind your ghost by ') + formatDiff(gd).slice(1);
       e.finishGhost.className = 'diff ' + (gd <= 0 ? 'faster' : 'slower');
     }
     e.finishPanel.classList.remove('flash');
