@@ -54,6 +54,10 @@ Drifting is optional. Holding Space loosens the rear grip and lets the car rotat
 - Falling off (e.g. missing the jump), leaving the course or being stuck for 3 seconds respawns you at the last checkpoint. The timer keeps running.
 - Your best time is stored in `localStorage` under `neonRushBestTime` (milliseconds) and survives refreshes. The sound preference is stored under `neonRushMuted`.
 
+## Ghost car
+
+A translucent cyan ghost drives the reference lap alongside you. Its lap (`src/ghost-data.js`) was produced offline by running a parameterised autopilot through the game's exact physics several thousand times and keeping the fastest clean run (no wall contact). The HUD shows your split against it at every checkpoint, and the finish screen shows the final gap. If you change the track or car physics, regenerate the data by re-running the optimizer (an autopilot that steers toward a look-ahead point and brakes by curvature; `Car.update` is fully deterministic, so any run can be recorded and replayed).
+
 ## Dependency
 
 Three.js **r128** is loaded as an ES module from jsDelivr via an import map in `index.html`:
@@ -77,6 +81,8 @@ It is the only external dependency (plus the Rajdhani web font from Google Fonts
 │   ├── track.js      centerline control points, ground queries, track geometry
 │   ├── scenery.js    deterministic trackside objects
 │   ├── camera.js     chase camera
+│   ├── ghost.js      ghost car replay
+│   ├── ghost-data.js recorded reference lap (generated)
 │   ├── input.js      keyboard
 │   ├── timer.js      race timer + formatting
 │   ├── ui.js         DOM UI controller

@@ -21,6 +21,7 @@ export class Car {
     this.lateralSpeed = 0;
     this.driftAmount = 0;
     this.airTime = 0;
+    this.groundGrace = 0;
     this.controlsEnabled = false;
     this.finishing = false;
     this.trackIndex = 0;
@@ -108,7 +109,7 @@ export class Car {
     this.yaw = yaw;
     this.vel.set(0, 0, 0);
     this.vy = 0; this.grounded = true; this.speed = 0; this.lateralSpeed = 0;
-    this.driftAmount = 0; this.airTime = 0; this.events.length = 0; this.finishing = false;
+    this.driftAmount = 0; this.airTime = 0; this.groundGrace = 0; this.events.length = 0; this.finishing = false;
     this.lastSteer = 0; this.lastThrottle = 0; this.accelEst = 0;
     if (track) {
       const q = track.query(pos.x, pos.y, pos.z);
@@ -130,6 +131,7 @@ export class Car {
     const steer = ctrl ? input.steer : 0;
     const driftKey = ctrl && input.drift;
     this.lastSteer = steer; this.lastThrottle = throttle;
+    if (this.groundGrace > 0) this.groundGrace -= dt;
 
     const fwd = this._fwd.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     const right = this._right.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
@@ -206,7 +208,8 @@ export class Car {
     if (this.grounded) {
       if (q.groundY !== null) {
         const predicted = this.pos.y + this.vy * dt - 0.5 * GRAVITY * dt * dt;
-        if (predicted > q.groundY + 0.012) {
+        const tolerance = this.groundGrace > 0 ? 0.6 : 0.012;
+        if (predicted > q.groundY + tolerance) {
           this.grounded = false; this.airTime = 0; this.pos.y = predicted;
         } else {
           this.vy = (q.groundY - this.pos.y) / dt;
@@ -222,7 +225,12 @@ export class Car {
       if (q.groundY !== null && this.pos.y <= q.groundY && this.pos.y > q.groundY - 4.0) {
         const impact = -this.vy;
         this.pos.y = q.groundY;
-        this.grounded = true; this.vy = 0;
+        this.grounded = true;
+        // Inherit the road's slope velocity so a downhill landing zone doesn't re-launch the car.
+        const h = Math.hypot(q.tan.x, q.tan.z) || 1;
+        const along = (this.vel.x * q.tan.x + this.vel.z * q.tan.z) / h;
+        this.vy = along * (q.tan.y / h);
+        this.groundGrace = 0.25;
         if (impact > 6) this.vel.multiplyScalar(1 - clamp((impact - 6) * 0.01, 0, 0.3));
         if (this.airTime > 0.15) this.events.push({ type: 'land', strength: clamp(impact / 25, 0.15, 1) });
         this.airTime = 0;

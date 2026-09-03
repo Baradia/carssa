@@ -3,6 +3,7 @@ import { createTrackData, buildTrackMeshes, HALF_WIDTH } from './track.js';
 import { buildScenery } from './scenery.js';
 import { Car, MAX_SPEED } from './car.js';
 import { ChaseCamera } from './camera.js';
+import { Ghost } from './ghost.js';
 import { Input } from './input.js';
 import { RaceTimer } from './timer.js';
 import { UI } from './ui.js';
@@ -47,6 +48,7 @@ export class Game {
     buildScenery(this.scene, this.track);
 
     this.car = new Car(this.scene);
+    this.ghost = new Ghost(this.scene);
     this.chase = new ChaseCamera(this.camera);
     this.particles = new ParticleSystem(this.scene);
     this.skids = new SkidMarks(this.scene);
@@ -107,7 +109,8 @@ export class Game {
     this.timer.reset();
     this.ui.hidePause(); this.ui.hideFinish(); this.ui.hideCountdown(); this.ui.hideHUD();
     this.ui.setSpeedLines(0);
-    this.ui.showMenu(this.bestTime);
+    this.ui.showMenu(this.bestTime, this.ghost.time);
+    this.ghost.setVisible(false);
     this.resetCar();
     this.resetCheckpoints();
     this.trackMeshes.setCountdown(0);
@@ -132,6 +135,8 @@ export class Game {
     this.particles.clear(); this.skids.clear();
     this.stuckTime = 0; this.respawning = false; this.finishShown = false; this.finishTimer = 0;
     this.ui.fadeOut();
+    this.ghost.setTime(0);
+    this.ghost.setVisible(true);
     this.chase.snap(this.car);
   }
 
@@ -169,11 +174,11 @@ export class Game {
     const prevBest = this.bestTime;
     const isRecord = !prevBest || final < prevBest;
     if (isRecord) { this.bestTime = Math.round(final); this.saveBest(this.bestTime); }
-    this.finishResult = { time: final, best: this.bestTime, isRecord, prevBest };
+    this.finishResult = { time: final, best: this.bestTime, isRecord, prevBest, ghostTime: this.ghost.time };
     this.finishTimer = 0; this.finishShown = false;
     this.ui.setTimer(final);
     this.ui.setBest(this.bestTime);
-    this.ui.flashMessage('Finish');
+    this.ui.flashMessage('Finish', final - this.ghost.time);
     this.audio.finish();
     if (isRecord) this.audio.record();
     const ft = this.trackMeshes.finishTop;
@@ -271,6 +276,8 @@ export class Game {
     this.followLight();
     this.trackMeshes.gates.forEach((g) => g.update(this.time));
 
+    if (this.state === STATE.RACING || this.state === STATE.FINISHED) this.ghost.setTime(this.timer.elapsed);
+
     // HUD
     if (this.state === STATE.RACING) this.ui.setTimer(this.timer.elapsed);
     this.ui.setSpeed(Math.round(Math.abs(car.speed) * 3.6), sr);
@@ -312,7 +319,8 @@ export class Game {
         this.nextCp++;
         if (this.nextCp < cps.length) this.trackMeshes.gates[this.nextCp].setState('next');
         this.ui.setCheckpoint(this.nextCp, cps.length);
-        this.ui.flashMessage(`Checkpoint ${this.nextCp}`);
+        const delta = this.timer.elapsed - this.ghost.timeAt(this.nextCp);
+        this.ui.flashMessage(`Checkpoint ${this.nextCp}`, delta);
         this.audio.checkpoint();
       }
     } else if (idxBefore < this.track.finishIndex && idxNow >= this.track.finishIndex && Math.abs(q.lateral) < HALF_WIDTH + 1.2) {

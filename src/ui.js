@@ -8,10 +8,10 @@ export class UI {
       hud: $('hud'), timer: $('hud-timer'), best: $('hud-best'), cp: $('hud-cp'), speed: $('hud-speed'),
       speedFill: $('hud-speedbar-fill'), msg: $('hud-message'), speedlines: $('speedlines'),
       countdown: $('countdown'), cdLights: Array.from(document.querySelectorAll('#countdown .cd-light')), cdText: $('cd-text'),
-      menu: $('menu'), menuBest: $('menu-best'), startBtn: $('start-btn'),
+      menu: $('menu'), menuBest: $('menu-best'), menuGhost: $('menu-ghost'), startBtn: $('start-btn'),
       pause: $('pause'), pauseResume: $('pause-resume'),
       finish: $('finish'), finishPanel: document.querySelector('#finish .panel'), finishTime: $('finish-time'),
-      finishBest: $('finish-best'), finishDiff: $('finish-diff'), finishRecord: $('finish-record'), finishRestart: $('finish-restart'),
+      finishBest: $('finish-best'), finishDiff: $('finish-diff'), finishGhost: $('finish-ghost'), finishRecord: $('finish-record'), finishRestart: $('finish-restart'),
       fade: $('fade'), mute: $('mute-btn'), muteLabel: document.querySelector('#mute-btn .mute-label'),
       error: $('error'), errorText: $('error-text'),
     };
@@ -31,8 +31,9 @@ export class UI {
 
   showError(text) { this.el.errorText.textContent = text; this._show(this.el.error); }
 
-  showMenu(best) {
+  showMenu(best, ghostTime) {
     this.el.menuBest.textContent = best ? formatTime(best) : '--:--.---';
+    if (ghostTime) this.el.menuGhost.textContent = formatTime(ghostTime);
     this._show(this.el.menu);
     this.el.startBtn.focus();
   }
@@ -52,9 +53,18 @@ export class UI {
     const f = Math.round(ratio * 200) / 2;
     if (f !== this._lastFill) { this.el.speedFill.style.width = f + '%'; this._lastFill = f; }
   }
-  flashMessage(text) {
+  // delta (ms) is the split against the ghost: negative = ahead.
+  flashMessage(text, delta) {
     const m = this.el.msg;
-    m.textContent = text;
+    if (delta == null) m.textContent = text;
+    else {
+      m.textContent = '';
+      const line = document.createElement('div'); line.textContent = text;
+      const d = document.createElement('div');
+      d.className = 'hud-delta ' + (delta <= 0 ? 'ahead' : 'behind');
+      d.textContent = (delta <= 0 ? '▲ ' : '▼ ') + formatDiff(delta) + ' vs ghost';
+      m.appendChild(line); m.appendChild(d);
+    }
     m.classList.remove('show');
     void m.offsetWidth; // restart the animation
     m.classList.add('show');
@@ -87,7 +97,7 @@ export class UI {
   showPause() { this._show(this.el.pause); this.el.pauseResume.focus(); }
   hidePause() { this._hide(this.el.pause); }
 
-  showFinish({ time, best, isRecord, prevBest }) {
+  showFinish({ time, best, isRecord, prevBest, ghostTime }) {
     const e = this.el;
     e.finishTime.textContent = formatTime(time);
     e.finishBest.textContent = formatTime(best);
@@ -99,6 +109,11 @@ export class UI {
       e.finishDiff.classList.add(d < 0 ? 'faster' : 'slower');
     } else {
       e.finishDiff.textContent = 'First completed run';
+    }
+    if (ghostTime) {
+      const gd = time - ghostTime;
+      e.finishGhost.textContent = (gd <= 0 ? 'Beat the ghost by ' : 'Ghost was faster by ') + formatDiff(gd).slice(1) + ' (' + formatTime(ghostTime) + ')';
+      e.finishGhost.className = 'diff ' + (gd <= 0 ? 'faster' : 'slower');
     }
     e.finishPanel.classList.remove('flash');
     void e.finishPanel.offsetWidth;

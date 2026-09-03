@@ -43,6 +43,10 @@ html, body {
 .diff { font-size: 22px; min-height: 28px; margin-top: 6px; font-variant-numeric: tabular-nums; color: var(--dim); }
 .diff.faster { color: var(--green); }
 .diff.slower { color: #ff8a8a; }
+.ghost-time { color: rgba(186, 251, 255, 0.85); font-size: 30px; }
+.hud-delta { font-size: 26px; letter-spacing: 0.12em; margin-top: 4px; font-variant-numeric: tabular-nums; text-shadow: none; }
+.hud-delta.ahead { color: var(--green); }
+.hud-delta.behind { color: #ff8a8a; }
 .error-text { font-size: 20px; max-width: 460px; color: var(--dim); }
 
 /* ---------- buttons ---------- */
