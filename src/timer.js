@@ -52,11 +52,21 @@ export class Timer {
     }
 
     getBestTime() {
-        const best = localStorage.getItem(this.storageKey);
-        return best ? parseFloat(best) : null;
+        try {
+            const best = localStorage.getItem(this.storageKey);
+            return best ? parseFloat(best) : null;
+        } catch (e) {
+            // Fail gracefully if browser blocks localStorage
+            console.warn("localStorage blocked - best time will not be saved.");
+            return null;
+        }
     }
 
     saveBestTime(ms) {
-        localStorage.setItem(this.storageKey, ms.toString());
+        try {
+            localStorage.setItem(this.storageKey, ms.toString());
+        } catch (e) {
+            // Fail gracefully
+        }
     }
 }
