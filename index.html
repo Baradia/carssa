@@ -5,10 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neon Rush | Time Trial</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Built-in Error Logger to catch silent crashes -->
+    <script>
+        window.addEventListener('error', function(e) {
+            let errorDiv = document.getElementById('debug-error');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.id = 'debug-error';
+                errorDiv.style.cssText = 'position:absolute; top:10px; left:10px; z-index:9999; color:#ff5555; background:rgba(0,0,0,0.9); padding:15px; font-family:monospace; border:1px solid #ff5555; pointer-events:none;';
+                document.body.appendChild(errorDiv);
+            }
+            errorDiv.innerHTML += 'Error: ' + e.message + '<br>';
+        });
+    </script>
 </head>
 <body>
     <div id="game-container"></div>
 
+    <!-- Main Menu -->
     <div id="main-menu" class="overlay">
         <h1 class="title">NEON<br><span class="magenta">RUSH</span></h1>
         <div class="subtitle">TIME TRIAL</div>
@@ -21,6 +36,7 @@
         </div>
     </div>
 
+    <!-- HUD -->
     <div id="hud" class="overlay hidden">
         <div class="top-bar">
             <div id="timer">00:00.000</div>
@@ -33,12 +49,14 @@
         <div id="message" class="hidden">NEW RECORD!</div>
     </div>
 
+    <!-- Pause Menu -->
     <div id="pause-menu" class="overlay hidden">
         <h2 class="title">PAUSED</h2>
         <button id="btn-resume" class="btn">RESUME</button>
         <button id="btn-restart-pause" class="btn">RESTART</button>
     </div>
 
+    <!-- Finish Screen -->
     <div id="finish-screen" class="overlay hidden">
         <h2 class="title magenta">FINISH!</h2>
         <div class="time-result">
@@ -49,14 +67,14 @@
         <button id="btn-restart-finish" class="btn mt-2">PLAY AGAIN</button>
     </div>
 
+    <!-- Import Map for Three.js (Switched to jsDelivr for better stability) -->
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
             }
         }
     </script>
-    <script type="module" src="src/main.js"></script>
+    <script type="module" src="./src/main.js"></script>
 </body>
 </html>
