@@ -22,17 +22,27 @@ export class Game {
         this.respawnPoint = { pos: this.track.startPos.clone(), rot: this.track.startRot.clone() };
         
         this.stuckTimer = 0;
-        this.setupAudio();
+        this.audioCtx = null; // Do not initialize audio until user clicks start
+        
         this.ui.bindGame(this);
         this.resetGame();
     }
 
-    setupAudio() {
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    initAudio() {
+        if (!this.audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                this.audioCtx = new AudioCtx();
+            }
+        }
     }
 
     playTone(freq, type, duration) {
-        if(this.audioCtx.state === 'suspended') this.audioCtx.resume();
+        this.initAudio();
+        if (!this.audioCtx) return; // Fail gracefully if browser blocks audio
+        
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+        
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         osc.type = type;
@@ -46,6 +56,8 @@ export class Game {
     }
 
     startRaceSequence() {
+        this.initAudio(); // Safe to init here because of the button click
+        
         this.resetGame();
         this.ui.showHUD();
         this.state = 'countdown';
@@ -112,7 +124,7 @@ export class Game {
         }
 
         this.playTone(600, 'sine', 0.1);
-        setTimeout(()=>this.playTone(800, 'sine', 0.4), 100);
+        setTimeout(() => this.playTone(800, 'sine', 0.4), 100);
         this.ui.showFinishScreen(formatted, this.timer.formatTime(this.timer.getBestTime()), isRecord);
     }
 
