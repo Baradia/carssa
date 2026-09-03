@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Rush | Time Trial</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <div id="main-menu" class="overlay">
+        <h1 class="title">NEON<br><span class="magenta">RUSH</span></h1>
+        <div class="subtitle">TIME TRIAL</div>
+        <div class="rules">ONE TRACK // ONE CAR // ONE BEST TIME</div>
+        <button id="btn-start" class="btn">START RACE</button>
+        <div class="best-time-display">BEST TIME: <span id="menu-best-time">--:--.---</span></div>
+        <div class="controls">
+            <p>W / ARROWS - DRIVE &nbsp;|&nbsp; SPACE - DRIFT</p>
+            <p>R - RESTART &nbsp;|&nbsp; ESC - PAUSE</p>
+        </div>
+    </div>
+
+    <div id="hud" class="overlay hidden">
+        <div class="top-bar">
+            <div id="timer">00:00.000</div>
+            <div id="checkpoints">CHK: 0 / 8</div>
+        </div>
+        <div class="bottom-bar">
+            <div id="speed">0 KM/H</div>
+        </div>
+        <div id="countdown" class="hidden">3</div>
+        <div id="message" class="hidden">NEW RECORD!</div>
+    </div>
+
+    <div id="pause-menu" class="overlay hidden">
+        <h2 class="title">PAUSED</h2>
+        <button id="btn-resume" class="btn">RESUME</button>
+        <button id="btn-restart-pause" class="btn">RESTART</button>
+    </div>
+
+    <div id="finish-screen" class="overlay hidden">
+        <h2 class="title magenta">FINISH!</h2>
+        <div class="time-result">
+            <div id="finish-time">00:00.000</div>
+            <div id="finish-best-time" class="best-time-display">BEST: --:--.---</div>
+        </div>
+        <div id="record-notification" class="hidden cyan glow">NEW RECORD!</div>
+        <button id="btn-restart-finish" class="btn mt-2">PLAY AGAIN</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
