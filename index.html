@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Neon Rush — Time Trial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js r128 (pinned) loaded as an ES module from jsDelivr. See README. -->
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="game-canvas" aria-label="Neon Rush 3D race view"></canvas>
+
+  <!-- Speed lines (pure CSS, opacity driven by speed) -->
+  <div id="speedlines" aria-hidden="true"></div>
+
+  <!-- In-race HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-block hud-top-left">
+      <div class="hud-label">Time</div>
+      <div id="hud-timer" class="hud-timer">00:00.000</div>
+      <div class="hud-best">Best <span id="hud-best">--:--.---</span></div>
+    </div>
+    <div class="hud-block hud-top-right">
+      <div class="hud-label">Checkpoints</div>
+      <div id="hud-cp" class="hud-cp">0 / 8</div>
+    </div>
+    <div class="hud-block hud-bottom-right">
+      <div class="hud-speedrow"><span id="hud-speed" class="hud-speed">0</span><span class="hud-unit">km/h</span></div>
+      <div id="hud-speedbar"><div id="hud-speedbar-fill"></div></div>
+    </div>
+    <div id="hud-message" class="hud-message" aria-live="polite"></div>
+  </div>
+
+  <!-- Countdown lights -->
+  <div id="countdown" class="hidden" aria-live="assertive">
+    <div class="cd-lights">
+      <span class="cd-light"></span><span class="cd-light"></span><span class="cd-light"></span>
+    </div>
+    <div id="cd-text" class="cd-text"></div>
+  </div>
+
+  <!-- Sound toggle (always available) -->
+  <button id="mute-btn" class="mute-btn" type="button" aria-pressed="false">
+    <span class="mute-icon" aria-hidden="true">♪</span><span class="mute-label">Sound on</span>
+  </button>
+
+  <!-- Main menu -->
+  <div id="menu" class="overlay">
+    <div class="menu-inner">
+      <h1 class="title"><span class="t1">Neon</span><span class="t2">Rush</span></h1>
+      <div class="subtitle">Time trial</div>
+      <p class="tagline">One track. One car. One best time.</p>
+      <button id="start-btn" class="btn primary big" type="button">Start race</button>
+      <div class="best-block">
+        <div class="label">Best time</div>
+        <div id="menu-best" class="mid-time">--:--.---</div>
+      </div>
+      <div class="controls-grid" aria-label="Controls">
+        <div><kbd>W A S D</kbd><kbd>Arrows</kbd><span>Drive</span></div>
+        <div><kbd>Space</kbd><span>Drift</span></div>
+        <div><kbd>R</kbd><span>Restart</span></div>
+        <div><kbd>Esc</kbd><span>Pause</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+    <div class="panel">
+      <div id="pause-title" class="panel-title">Paused</div>
+      <div class="btn-col">
+        <button id="pause-resume" class="btn primary" type="button">Resume <kbd>Esc</kbd></button>
+        <button id="pause-restart" class="btn" type="button">Restart <kbd>R</kbd></button>
+        <button id="pause-menu" class="btn" type="button">Main menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finish -->
+  <div id="finish" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="finish-title">
+    <div class="panel finish-panel">
+      <div id="finish-title" class="panel-title">Finish</div>
+      <div id="finish-record" class="record hidden">New record!</div>
+      <div class="label">Your time</div>
+      <div id="finish-time" class="big-time">00:00.000</div>
+      <div class="label">Best time</div>
+      <div id="finish-best" class="mid-time">00:00.000</div>
+      <div id="finish-diff" class="diff"></div>
+      <div class="btn-col">
+        <button id="finish-restart" class="btn primary" type="button">Race again <kbd>R</kbd></button>
+        <button id="finish-menu" class="btn" type="button">Main menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error / unsupported -->
+  <div id="error" class="overlay hidden" role="alert">
+    <div class="panel"><div class="panel-title">Can't start</div><p id="error-text" class="error-text"></p></div>
+  </div>
+
+  <!-- Respawn fade -->
+  <div id="fade" aria-hidden="true"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
